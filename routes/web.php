@@ -13,6 +13,28 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
+Route::get('/home', function () {
+    return view('home');
 });
+
+Route::post('/students', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'age' => 'required|integer',
+        'email' => 'required|email|unique:students,email',
+        'gender' => 'required'
+    ]);
+
+    // save to database
+    Student::create([
+        'name' => $request->name,
+        'age' => $request->age,
+        'email' => $request->email,
+        'gender' => $request->gender,
+    ]);
+    return back()->with('success', 'Student saved!');
+});
+
+Route::get('/{any?}', function () {
+    return view('welcome');
+})->where('any', '^(?!api),"$');
