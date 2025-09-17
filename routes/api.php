@@ -17,3 +17,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+use App\Http\Controllers\ContactController;
+
+
+
+Route::get('/contacts', [ContactController::class, 'index']);       // Get all
+Route::post('/contacts', [ContactController::class, 'store']);      // Create
+Route::put('/contacts/{contact}', [ContactController::class, 'update']); // Update
+Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']); // Delete
