@@ -33803,10 +33803,14 @@ var Example = function Example() {
     toastMessage = _useState16[0],
     setToastMessage = _useState16[1];
 
-  // Fetch contacts based on view
+  // Fetch contacts based on view (archived 0 = active, 1 = archived)
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
-    var url = view === 'active' ? '/api/contacts' : '/api/contacts/archived';
-    axios__WEBPACK_IMPORTED_MODULE_1___default().get(url).then(function (res) {
+    var archivedParam = view === 'archived' ? 1 : 0;
+    axios__WEBPACK_IMPORTED_MODULE_1___default().get('/api/contacts', {
+      params: {
+        archived: archivedParam
+      }
+    }).then(function (res) {
       return setContacts(res.data.data || res.data);
     })["catch"](function (err) {
       return console.error(err);
@@ -33873,16 +33877,49 @@ var Example = function Example() {
     setMessage(contact.message);
     setToastMessage(null);
   };
-  var handleDelete = function handleDelete(id) {
-    if (window.confirm('Delete this contact?')) {
-      axios__WEBPACK_IMPORTED_MODULE_1___default()["delete"]("/api/contacts/".concat(id)).then(function () {
+
+  // Archive (Active tab)
+  var handleArchive = function handleArchive(id) {
+    if (window.confirm('Archive this contact?')) {
+      axios__WEBPACK_IMPORTED_MODULE_1___default().post("/api/contacts/".concat(id, "/archive")).then(function () {
         setContacts(function (prev) {
-          return prev.filter(function (contact) {
-            return contact.id !== id;
+          return prev.filter(function (c) {
+            return c.id !== id;
           });
         });
-        setToastMessage('🗑️ Contact deleted successfully');
-        if (editingId === id) resetForm();
+        setToastMessage('📂 Contact archived successfully');
+      })["catch"](function (err) {
+        return console.error(err);
+      });
+    }
+  };
+
+  // Restore (Archived tab)
+  var handleRestore = function handleRestore(id) {
+    if (window.confirm('Restore this contact?')) {
+      axios__WEBPACK_IMPORTED_MODULE_1___default().post("/api/contacts/".concat(id, "/restore")).then(function () {
+        setContacts(function (prev) {
+          return prev.filter(function (c) {
+            return c.id !== id;
+          });
+        });
+        setToastMessage('✅ Contact restored successfully');
+      })["catch"](function (err) {
+        return console.error(err);
+      });
+    }
+  };
+
+  // Permanent delete (Archived tab)
+  var handlePermanentDelete = function handlePermanentDelete(id) {
+    if (window.confirm('Permanently delete this contact?')) {
+      axios__WEBPACK_IMPORTED_MODULE_1___default()["delete"]("/api/contacts/".concat(id)).then(function () {
+        setContacts(function (prev) {
+          return prev.filter(function (c) {
+            return c.id !== id;
+          });
+        });
+        setToastMessage('🗑️ Contact permanently deleted');
       })["catch"](function (err) {
         return console.error(err);
       });
@@ -34005,23 +34042,45 @@ var Example = function Example() {
                 children: [contact.name, " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("span", {
                   children: ["(", contact.email, ")"]
                 })]
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("p", {
-                children: contact.subject
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("p", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+                  children: "Subject:"
+                }), " ", contact.subject]
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("p", {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("strong", {
+                  children: "Message:"
+                }), " ", contact.message]
               })]
-            }), view === 'active' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
               className: "actions",
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
-                onClick: function onClick() {
-                  return handleEdit(contact);
-                },
-                className: "btn small edit",
-                children: "\u270F\uFE0F"
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
-                onClick: function onClick() {
-                  return handleDelete(contact.id);
-                },
-                className: "btn small delete",
-                children: "\uD83D\uDDD1\uFE0F"
+              children: [view === 'active' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                  onClick: function onClick() {
+                    return handleEdit(contact);
+                  },
+                  className: "btn small edit",
+                  children: "\u270F\uFE0F"
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                  onClick: function onClick() {
+                    return handleArchive(contact.id);
+                  },
+                  className: "btn small archive",
+                  children: "\uD83D\uDCC2"
+                })]
+              }), view === 'archived' && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)(react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.Fragment, {
+                children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                  onClick: function onClick() {
+                    return handleRestore(contact.id);
+                  },
+                  className: "btn small restore",
+                  children: "\uD83D\uDD04"
+                }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+                  onClick: function onClick() {
+                    return handlePermanentDelete(contact.id);
+                  },
+                  className: "btn small delete",
+                  children: "\uD83D\uDDD1\uFE0F"
+                })]
               })]
             })]
           }, contact.id);

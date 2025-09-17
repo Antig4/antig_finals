@@ -19,8 +19,8 @@ class CreateContactsTable extends Migration
             $table->string('email');
             $table->string('subject');
             $table->text('message');
+            $table->boolean('is_archived')->default(false); // archive flag
             $table->timestamps();
-            $table->boolean('is_archived')->default(false);
         });
     }
 
@@ -30,9 +30,8 @@ class CreateContactsTable extends Migration
      * @return void
      */
     public function down()
-
     {
-        $table->dropColumn('is_archived');
+        // drop the entire contacts table on rollback
         Schema::dropIfExists('contacts');
     }
 }

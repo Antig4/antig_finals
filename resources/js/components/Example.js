@@ -4,7 +4,7 @@ import '../../sass/example.scss';
 
 const Example = () => {
   const [contacts, setContacts] = useState([]);
-  const [view, setView] = useState('active'); // active or archived
+  const [view, setView] = useState('active'); // active or archivedd
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
@@ -13,10 +13,11 @@ const Example = () => {
   const [editingId, setEditingId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
 
-  // Fetch contacts based on view
+  // Fetch contacts based on view (archived 0 = active, 1 = archived)
   useEffect(() => {
-    const url = view === 'active' ? '/api/contacts' : '/api/contacts/archived';
-    axios.get(url)
+    const archivedParam = view === 'archived' ? 1 : 0;
+    axios
+      .get('/api/contacts', { params: { archived: archivedParam } })
       .then((res) => setContacts(res.data.data || res.data))
       .catch((err) => console.error(err));
   }, [view]);
@@ -40,17 +41,21 @@ const Example = () => {
 
     if (Object.keys(errors).length === 0) {
       if (editingId) {
-        axios.put(`/api/contacts/${editingId}`, { name, email, subject, message })
+        axios
+          .put(`/api/contacts/${editingId}`, { name, email, subject, message })
           .then((res) => {
             setContacts((prev) =>
-              prev.map((contact) => (contact.id === editingId ? res.data.data : contact))
+              prev.map((contact) =>
+                contact.id === editingId ? res.data.data : contact
+              )
             );
             setToastMessage('✅ Contact updated successfully');
             resetForm();
           })
           .catch((err) => console.error(err));
       } else {
-        axios.post('/api/contacts', { name, email, subject, message })
+        axios
+          .post('/api/contacts', { name, email, subject, message })
           .then((res) => {
             setContacts((prev) => [...prev, res.data.data]);
             setToastMessage('✅ Contact added successfully');
@@ -72,13 +77,40 @@ const Example = () => {
     setToastMessage(null);
   };
 
-  const handleDelete = (id) => {
-    if (window.confirm('Delete this contact?')) {
-      axios.delete(`/api/contacts/${id}`)
+  // Archive (Active tab)
+  const handleArchive = (id) => {
+    if (window.confirm('Archive this contact?')) {
+      axios
+        .post(`/api/contacts/${id}/archive`)
         .then(() => {
-          setContacts((prev) => prev.filter((contact) => contact.id !== id));
-          setToastMessage('🗑️ Contact deleted successfully');
-          if (editingId === id) resetForm();
+          setContacts((prev) => prev.filter((c) => c.id !== id));
+          setToastMessage('📂 Contact archived successfully');
+        })
+        .catch((err) => console.error(err));
+    }
+  };
+
+  // Restore (Archived tab)
+  const handleRestore = (id) => {
+    if (window.confirm('Restore this contact?')) {
+      axios
+        .post(`/api/contacts/${id}/restore`)
+        .then(() => {
+          setContacts((prev) => prev.filter((c) => c.id !== id));
+          setToastMessage('✅ Contact restored successfully');
+        })
+        .catch((err) => console.error(err));
+    }
+  };
+
+  // Permanent delete (Archived tab)
+  const handlePermanentDelete = (id) => {
+    if (window.confirm('Permanently delete this contact?')) {
+      axios
+        .delete(`/api/contacts/${id}`)
+        .then(() => {
+          setContacts((prev) => prev.filter((c) => c.id !== id));
+          setToastMessage('🗑️ Contact permanently deleted');
         })
         .catch((err) => console.error(err));
     }
@@ -116,7 +148,9 @@ const Example = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="John Doe"
                 />
-                {formErrors.name && <span className="error">{formErrors.name}</span>}
+                {formErrors.name && (
+                  <span className="error">{formErrors.name}</span>
+                )}
               </div>
 
               <div className="field">
@@ -127,7 +161,9 @@ const Example = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="example@domain.com"
                 />
-                {formErrors.email && <span className="error">{formErrors.email}</span>}
+                {formErrors.email && (
+                  <span className="error">{formErrors.email}</span>
+                )}
               </div>
 
               <div className="field">
@@ -138,7 +174,9 @@ const Example = () => {
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="Subject of the message"
                 />
-                {formErrors.subject && <span className="error">{formErrors.subject}</span>}
+                {formErrors.subject && (
+                  <span className="error">{formErrors.subject}</span>
+                )}
               </div>
 
               <div className="field">
@@ -148,7 +186,9 @@ const Example = () => {
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Enter your message"
                 />
-                {formErrors.message && <span className="error">{formErrors.message}</span>}
+                {formErrors.message && (
+                  <span className="error">{formErrors.message}</span>
+                )}
               </div>
 
               <div className="btn-group">
@@ -156,7 +196,11 @@ const Example = () => {
                   {editingId ? 'Update' : 'Add'}
                 </button>
                 {editingId && (
-                  <button type="button" className="btn cancel" onClick={resetForm}>
+                  <button
+                    type="button"
+                    className="btn cancel"
+                    onClick={resetForm}
+                  >
                     Cancel
                   </button>
                 )}
@@ -168,21 +212,56 @@ const Example = () => {
 
       {/* Contacts List */}
       <div className="list-section">
-        <h2>{view === 'active' ? '👥 Active Contacts' : '📂 Archived Contacts'}</h2>
+        <h2>
+          {view === 'active' ? '👥 Active Contacts' : '📂 Archived Contacts'}
+        </h2>
         <div className="contacts-list">
           {contacts.length > 0 ? (
             contacts.map((contact) => (
               <div key={contact.id} className="contact-card">
                 <div className="contact-info">
-                  <h3>{contact.name} <span>({contact.email})</span></h3>
-                  <p>{contact.subject}</p>
+                  <h3>
+                    {contact.name} <span>({contact.email})</span>
+                  </h3>
+                  <p><strong>Subject:</strong> {contact.subject}</p>
+                  <p><strong>Message:</strong> {contact.message}</p>
                 </div>
-                {view === 'active' && (
-                  <div className="actions">
-                    <button onClick={() => handleEdit(contact)} className="btn small edit">✏️</button>
-                    <button onClick={() => handleDelete(contact.id)} className="btn small delete">🗑️</button>
-                  </div>
-                )}
+
+                <div className="actions">
+                  {view === 'active' && (
+                    <>
+                      <button
+                        onClick={() => handleEdit(contact)}
+                        className="btn small edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => handleArchive(contact.id)}
+                        className="btn small archive"
+                      >
+                        📂
+                      </button>
+                    </>
+                  )}
+
+                  {view === 'archived' && (
+                    <>
+                      <button
+                        onClick={() => handleRestore(contact.id)}
+                        className="btn small restore"
+                      >
+                        🔄
+                      </button>
+                      <button
+                        onClick={() => handlePermanentDelete(contact.id)}
+                        className="btn small delete"
+                      >
+                        🗑️
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             ))
           ) : (

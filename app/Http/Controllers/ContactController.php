@@ -7,64 +7,84 @@ use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
-    // Get all contacts
+    // List contacts: active or archived
     public function index(Request $request)
     {
-        $perPage = $request->get('per_page', 10);
-        $contacts = Contact::latest()->paginate($perPage);
+        $archived = $request->query('archived', 0); // 0 = active, 1 = archived
 
-        return response()->json([
-            'data' => $contacts->items(),
-            'pagination' => [
-                'total' => $contacts->total(),
-                'per_page' => $contacts->perPage(),
-                'current_page' => $contacts->currentPage(),
-                'last_page' => $contacts->lastPage(),
-            ],
-        ]);
+        $query = Contact::query();
+
+        if ($archived == 1) {
+            $query->where('is_archived', true);
+        } else {
+            $query->where('is_archived', false);
+        }
+
+        return response()->json($query->get());
     }
 
-    // Store new contact
+    // Store a new contact
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'subject' => 'required|string|max:255',
             'message' => 'required|string',
         ]);
 
-        $contact = Contact::create($validated);
+        $contact = Contact::create($data);
 
-        return response()->json([
-            'message' => 'Contact created successfully!',
-            'data'    => $contact,
-        ], 201);
+        return response()->json(['data' => $contact]);
     }
 
-    // Update contact
-    public function update(Request $request, Contact $contact)
+    // Update existing contact
+    public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'name'    => 'required|string|max:255',
-            'email'   => 'required|email|max:255',
+        $contact = Contact::findOrFail($id);
+
+        $data = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'subject' => 'required|string|max:255',
             'message' => 'required|string',
         ]);
 
-        $contact->update($validated);
+        $contact->update($data);
 
-        return response()->json([
-            'message' => 'Contact updated successfully!',
-            'data'    => $contact,
-        ]);
+        return response()->json(['data' => $contact]);
     }
 
-    // Delete contact (actually removes from DB)
-    public function destroy(Contact $contact)
+    // Archive contact (Active tab → Archived)
+    public function archive($id)
     {
-        $contact->delete();
+        $contact = Contact::findOrFail($id);
+        $contact->update(['is_archived' => true]);
 
-        return response()->json(['message' => 'Contact deleted successfully']);
+        return response()->json(['message' => 'Contact archived']);
+    }
+
+    // Restore contact (Archived tab → Active)
+    public function restore($id)
+    {
+        $contact = Contact::findOrFail($id);
+        $contact->update(['is_archived' => false]);
+
+        return response()->json(['message' => 'Contact restored']);
+    }
+
+    // Soft delete (Archived tab → Permanently deleted in UI but kept in DB with deleted_at)
+    public function destroy($id)
+    {
+        $contact = Contact::findOrFail($id);
+        $contact->delete(); // Soft delete; fills deleted_at
+
+        return response()->json(['message' => 'Contact soft-deleted']);
+    }
+
+    // Optional: Show soft deleted items
+    public function trashed()
+    {
+        return response()->json(Contact::onlyTrashed()->get());
     }
 }

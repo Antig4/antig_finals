@@ -23,5 +23,10 @@ use App\Http\Controllers\ContactController;
 
 Route::get('/contacts', [ContactController::class, 'index']);       // Get all
 Route::post('/contacts', [ContactController::class, 'store']);      // Create
-Route::put('/contacts/{contact}', [ContactController::class, 'update']); // Update
-Route::delete('/contacts/{contact}', [ContactController::class, 'destroy']); // Delete
+Route::put('/contacts/{id}', [ContactController::class, 'update']); // Update
+
+// new:
+Route::post('/contacts/{contact}/archive', [ContactController::class, 'archive']);
+Route::post('/contacts/{contact}/restore', [ContactController::class, 'restore']);
+Route::delete('/contacts/{id}', [ContactController::class, 'destroy']);
+

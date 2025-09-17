@@ -4,15 +4,31 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Contact extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    // Define the fillable attributes for mass assignment
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-    'name', 'email', 'subject', 'message', 'is_archived'
-];
+        'name',
+        'email',
+        'subject',
+        'message',
+        'is_archived',
+    ];
 
-    // Optionally, you can add relationships, casting, etc. based on your requirements
+    /**
+     * The attributes that should be mutated to dates.
+     *
+     * @var array<int, string>
+     */
+    protected $dates = [
+        'deleted_at',
+    ];
 }
